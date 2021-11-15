@@ -1,56 +1,85 @@
-def ran(x1, x2, y1, y2):
-    r = (((x1 - x2) ** 2) + ((y1 - y2) ** 2)) ** 0.5
-    return(r)
-print("Введите число тел")
+from tkinter import *
+# получает 4 числа. возвращает 1 число. Высчитывает расстояние между 2 точками на плоскости
+def r(coord_x, coord_x2, coord_y, coord_y2):
+    return ((coord_x - coord_x2) ** 2 + (coord_y - coord_y2) ** 2) ** 0.5
 
-# Число тел. Целое положительное
+'''
+    получает кооординаты (тела по рассматривемой оси, рассматриваемое тело по той же оси, аналогично для оставшийся оси) и кол-во тел.
+    возвращает силу по данной координате, с которой все тела действуют на выбранное
+'''
+def count_f (coordS_first, our_coord_first, coordS_second, our_coord_second, n):
+    sum_f = 0
+    fx = []
+    for i in range(n):
+        if (r(coordS_second[i], our_coord_second, coordS_first[i], our_coord_first) != 0):
+            fx.append(-(our_coord_first - coordS_first[i]) / r(coordS_second[i], our_coord_second, coordS_first[i], our_coord_first))
+            sum_f += fx[len(fx) - 1]
+    return sum_f
+
+#  получает старую скорость, ускорение и время. возвращает новую скорость
+def count_v(old_v, a, time):
+    return old_v + a * time
+
+# получает силу и массу. возвращает ускорение
+def count_a(f, m):
+    return f / m
+
+# получает скорость, старую координату и время. возвращает координату
+def count_coord(start_coord, v, t):
+    return v * t + start_coord
+
+root = Tk()
+canvas = Canvas(root, width = 800, height = 800, bg = 'white')
+canvas.pack()
+# количество тел
+print('Введите количество тел')
 n = int(input())
 
-# Вводим x, y, Vx, Vy и m и задаем Fy, Fx, Ay, Ax. Все - массивы чисел
-print("Введите x, y, Vx, Vy и m. Числа вводите на отдельных строках для каждой переменной. Числа для одной переменной и разных тел вводите на одной строке")
+print('Введите скорости сначала по оси х затем по оси у')
+
+# скорости по х
+vx = list(map(int, input().split()))
+
+# скорости по у
+vy = list(map(int, input().split()))
+
+print('Введите координаты сначала по оси х затем по оси у')
 x = list(map(int, input().split()))
 y = list(map(int, input().split()))
-Ax = [-1] * n
-Fx = [-1] * n
-Vx = list(map(int, input().split()))
-Vy = list(map(int, input().split()))
-Ay = [-1] * n
-Fy = [-1] * n
+
+print('Введите массу')
 m = list(map(int, input().split()))
 
-# Время пересчета. Число
+ax = [-1] * n
+ay = [-1] * n
+
+# воздействия всех тел на рассматриваемое по оси х и у
+fx = [-1] * (n - 1)
+fy = [-1] * (n - 1)
+
+# время между пересчетами
 dt = 0.01
 
-if (len(x) != n or len(y) != n or len(Vx) != n or len(Vy) != n or len(m) != n):
-    print("Ты не смог ввести правильное количество чисел. Ты - дно. Ты - днище. Ты пирожок с ничем. Ты - никто. Ты - пыль на сапогоах гения, создавшего этот код")
-else:
+# время с начала работы модели
+t = 0
 
-    j = 0
-    while j <= 10**3:
-        
-        for i in range (0, n):
-            Fx1 = 0
-            Fy1 = 0
-            
-            for g in range(0, n):
-                if (i != g):
-                    Fx[i] = (x[g] - x[i]) / ran(x[i], x[g], y[i], y[g])
-                    Fx1 += Fx[i]
-                    print(Fx1)
-                    
-            Fx[i] = Fx1    
-            Ax[i] = Fx[i] / m[i]
-            Vx[i] = Vx[i] + Ax[i] * dt
-            x[i] = x[i] + Vx[i] * dt
+while t < 100:
+    for i in range(0, n):
 
-            for g in range(0, n):                
-                if (i != g):
-                    Fy[i] = (y[g] - y[i]) / ran(x[i], x[g], y[i], y[g])
-                    Fy1 += Fy[i]
-                    
-            Ay[i] = Fy[i] / m[i]
-            Vy[i] = Vy[i] + Ay[i] * dt
-            y[i] = y[i] + Vy[i] * dt
+        # пересчет значений по х для всех тел
+        ax[i] = count_a(count_f(x, x[i], y, y[i], n), m[i])
+        vx[i] = count_v(vx[i], ax[i], dt)
+        x[i] = count_coord(x[i], vx[i], dt)
 
+        # пересчет значений по у для всех тел
+        ay[i] = count_a(count_f(y, y[i], x, x[i], n), m[i])
+        vy[i] = count_v(vy[i], ay[i], dt)
+        y[i] = count_coord(y[i], vy[i], dt)
+
+        if (int(t * 10) % 10 == 0):
             print("Тело номер %s имеет координаты" % (i + 1), x[i], 'и', y[i])
-        j+=1
+            canvas.create_oval(int(x[i] + 1) + 2, int(y[i] + 1) + 2, int(x[i] + 1) - 2, int(y[i] + 1) - 2)
+            root.update()
+
+    t+=dt
+root.mainloop()
